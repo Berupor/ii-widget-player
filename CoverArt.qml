@@ -26,7 +26,7 @@ Item {
         id: fetcher
         property string url
         readonly property string path: `${Directories.coverArt}/${Qt.md5(fetcher.url)}`
-        command: ["bash", "-c", '[ -f "$1" ] || { mkdir -p "${1%/*}" && curl -4 -sSL "$2" -o "$1"; }', "_", fetcher.path, fetcher.url]
+        command: ["bash", "-c", '[ -f "$1" ] || { mkdir -p "${1%/*}" && curl -4 -sSL "$2" -o "$1.$$" && mv "$1.$$" "$1" || { rm -f "$1.$$"; exit 1; }; }', "_", fetcher.path, fetcher.url]
         onExited: exitCode => {
             if (exitCode === 0)
                 root.fetchedUrl = fetcher.url
