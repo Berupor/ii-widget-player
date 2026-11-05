@@ -3,13 +3,14 @@ import qs.modules.common.models
 import qs.modules.common.functions
 import QtQuick
 import Quickshell
+import "hero.js" as Hero
 
 /** Color scheme off a player's cover, mixed the way the shell's own player cards do it. */
 Item {
     id: root
     property var player
-    property color artColor: Appearance.m3colors.m3secondaryContainer
-    property bool tinted: false
+    property color artColor: Hero.tintOf(root.player?.trackArtUrl, Appearance.m3colors.m3secondaryContainer)
+    property bool tinted: Hero.hasTint(root.player?.trackArtUrl)
     readonly property QtObject scheme: root.tinted ? artTint : Appearance.colors
 
     Behavior on artColor {
@@ -30,8 +31,10 @@ Item {
         target: quantizer
         function onColorsChanged() {
             if (cover.source && quantizer.colors.length > 0) {
-                root.artColor = ColorUtils.mix(quantizer.colors[0], Appearance.colors.colPrimaryContainer, 0.8)
+                const mixed = ColorUtils.mix(quantizer.colors[0], Appearance.colors.colPrimaryContainer, 0.8)
+                root.artColor = mixed
                 root.tinted = true
+                Hero.rememberTint(cover.url, mixed.toString())
             }
         }
     }

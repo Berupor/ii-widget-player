@@ -26,7 +26,7 @@ the built-in popup uses.
 | File | What it is |
 |---|---|
 | `MediaView.qml` | slot entry: picks the hero player |
-| `hero.js` | which player goes up front |
+| `hero.js` | which player goes up front, the last card color per cover |
 | `HeroView.qml` | the card, fed plain lists so the demo can drive it |
 | `PlayerArt.qml`, `CoverArt.qml` | cover with a fallback glyph, remote art cached to a file |
 | `CoverTint.qml` | color scheme off the cover, mixed like the shell's player cards |

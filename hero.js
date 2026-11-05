@@ -16,3 +16,18 @@ function rows(slots, hero, players) {
 function swap(rows, picked, hero) {
     return rows.map(p => p === picked ? hero : p)
 }
+
+const tints = {}
+
+/** The card color last taken from this cover: a reopened popup starts on it instead of fading in. */
+function tintOf(url, fallback) {
+    return tints[url] ?? fallback
+}
+
+function hasTint(url) {
+    return url in tints
+}
+
+function rememberTint(url, color) {
+    tints[url] = color
+}
