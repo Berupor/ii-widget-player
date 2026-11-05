@@ -30,6 +30,9 @@ Item {
             { "name": "a picked player that went away falls back", "got": Hero.pick(symphony, null, all) === dunes, "want": true },
             { "name": "nothing playing leads with the first", "got": Hero.pick(null, null, [tide, moss]) === tide, "want": true },
             { "name": "no players, no hero", "got": Hero.pick(null, null, []), "want": null },
+            { "name": "rows skip the hero and keep the player order", "got": Hero.rows([], dunes, all), "want": [clip, tide, moss] },
+            { "name": "picking a row hands its slot to the old hero", "got": Hero.swap([clip, tide, moss], tide, dunes), "want": [clip, dunes, moss] },
+            { "name": "rows keep the slots order and append newcomers", "got": Hero.rows([moss, clip], tide, all), "want": [moss, clip, dunes] },
             { "name": "the view takes room with players", "got": view.item.implicitHeight > 200, "want": root.scene !== 2 }
         ]
     }
@@ -94,7 +97,7 @@ Item {
         id: heroView
         HeroView {
             hero: root.hero
-            rest: root.players.filter(p => p !== root.hero)
+            rest: Hero.rows([], root.hero, root.players)
         }
     }
     Component {

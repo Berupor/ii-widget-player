@@ -5,3 +5,14 @@ function pick(picked, active, players) {
     return [picked, active].find(p => p && players.includes(p))
         ?? players.find(p => p.isPlaying) ?? players[0] ?? null
 }
+
+/** The list under the hero: `slots` order kept, players that came since appended. */
+function rows(slots, hero, players) {
+    const kept = slots.filter(p => p !== hero && players.includes(p))
+    return [...kept, ...players.filter(p => p !== hero && !kept.includes(p))]
+}
+
+/** Slots after `picked` moves up: the old hero takes its place, so the other rows stay put. */
+function swap(rows, picked, hero) {
+    return rows.map(p => p === picked ? hero : p)
+}

@@ -28,11 +28,32 @@ Item {
         depth: 0
         rescaleSize: 1
     }
+    property color artColor: Appearance.m3colors.m3secondaryContainer
+    property bool tinted: false
+    Behavior on artColor {
+        animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+    }
+    Connections {
+        target: quantizer
+        function onColorsChanged() {
+            if (cover.source && quantizer.colors.length > 0) {
+                root.artColor = quantizer.colors[0]
+                root.tinted = true
+            }
+        }
+    }
+    Connections {
+        target: cover
+        function onUrlChanged() {
+            if (!cover.url)
+                root.tinted = false
+        }
+    }
     AdaptedMaterialScheme {
         id: artTint
-        color: quantizer.colors[0] ?? Appearance.m3colors.m3secondaryContainer
+        color: root.artColor
     }
-    readonly property QtObject tint: cover.source && quantizer.colors.length > 0 ? artTint : Appearance.colors
+    readonly property QtObject tint: root.tinted ? artTint : Appearance.colors
     // Art tints run light, too pale for 3:1 on a light card
     readonly property color accent: root.tint === artTint && !Appearance.m3colors.darkmode
         ? ColorUtils.mix(artTint.colPrimary, Appearance.colors.colOnLayer0, 0.55) : root.tint.colPrimary
@@ -102,6 +123,9 @@ Item {
                         colBackgroundHover: ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.75)
                         colRipple: ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.65)
                         onClicked: root.picked(chip.modelData)
+                        StyledToolTip {
+                            text: [chip.modelData.identity, StringUtils.cleanMusicTitle(chip.modelData.trackTitle)].filter(s => s).join(" · ")
+                        }
                         contentItem: Item {
                             RowLayout {
                                 id: chipRow
@@ -140,8 +164,19 @@ Item {
             ColumnLayout {
                 Layout.topMargin: 4
                 spacing: 2
+                FontMetrics {
+                    id: titleMetrics
+                    font: title.font
+                }
+                FontMetrics {
+                    id: artistMetrics
+                    font: artist.font
+                }
                 StyledText {
+                    id: title
                     Layout.fillWidth: true
+                    Layout.minimumHeight: titleMetrics.height * 2
+                    verticalAlignment: Text.AlignBottom
                     text: StringUtils.cleanMusicTitle(root.hero?.trackTitle) || Translation.tr("Untitled")
                     font.family: Appearance.font.family.expressive
                     font.pixelSize: Appearance.font.pixelSize.hugeass
@@ -151,8 +186,9 @@ Item {
                     elide: Text.ElideRight
                 }
                 StyledText {
+                    id: artist
                     Layout.fillWidth: true
-                    visible: text.length > 0
+                    Layout.minimumHeight: artistMetrics.height
                     text: root.hero?.trackArtist ?? ""
                     font.pixelSize: Appearance.font.pixelSize.normal
                     color: Appearance.m3colors.m3onSurfaceVariant
@@ -163,6 +199,7 @@ Item {
             RowLayout {
                 spacing: 8
                 TimeLabel {
+                    visible: (root.hero?.length ?? 0) > 0
                     text: StringUtils.friendlyTimeForSeconds(root.hero?.position ?? 0)
                 }
                 TrackProgress {
@@ -173,6 +210,7 @@ Item {
                     trackColor: root.tint.colSecondaryContainer
                 }
                 TimeLabel {
+                    visible: (root.hero?.length ?? 0) > 0
                     text: StringUtils.friendlyTimeForSeconds(root.hero?.length ?? 0)
                 }
             }

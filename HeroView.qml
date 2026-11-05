@@ -48,7 +48,7 @@ Item {
         width: root.width - Appearance.sizes.elevationMargin * 2
         implicitHeight: root.hero ? content.implicitHeight + 32 : 200
         radius: Appearance.rounding.large
-        color: Appearance.colors.colLayer0
+        color: Appearance.m3colors.m3surfaceContainer
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
 
@@ -91,9 +91,20 @@ Item {
                             elide: Text.ElideRight
                         }
                     }
+                    FontMetrics {
+                        id: titleMetrics
+                        font: title.font
+                    }
+                    FontMetrics {
+                        id: artistMetrics
+                        font: artist.font
+                    }
                     StyledText {
+                        id: title
                         Layout.fillWidth: true
                         Layout.topMargin: 4
+                        Layout.minimumHeight: titleMetrics.height * 2
+                        verticalAlignment: Text.AlignBottom
                         text: StringUtils.cleanMusicTitle(root.hero?.trackTitle) || Translation.tr("Untitled")
                         font.family: Appearance.font.family.title
                         font.pixelSize: Appearance.font.pixelSize.huge
@@ -104,8 +115,9 @@ Item {
                         elide: Text.ElideRight
                     }
                     StyledText {
+                        id: artist
                         Layout.fillWidth: true
-                        visible: text.length > 0
+                        Layout.minimumHeight: artistMetrics.height
                         text: root.hero?.trackArtist ?? ""
                         font.pixelSize: Appearance.font.pixelSize.normal
                         color: Appearance.colors.colSubtext
@@ -121,6 +133,7 @@ Item {
                     player: root.hero
                 }
                 RowLayout {
+                    visible: (root.hero?.length ?? 0) > 0
                     TimeLabel {
                         text: StringUtils.friendlyTimeForSeconds(root.hero?.position ?? 0)
                     }
@@ -168,7 +181,7 @@ Item {
                 visible: root.rest.length > 0
                 implicitHeight: restList.implicitHeight + 8
                 radius: Appearance.rounding.normal
-                color: Appearance.colors.colLayer2
+                color: Appearance.colors.colSurfaceContainerHigh
 
                 ColumnLayout {
                     id: restList
@@ -184,8 +197,8 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: 56
                             buttonRadius: Appearance.rounding.small
-                            colBackgroundHover: Appearance.colors.colLayer2Hover
-                            colRipple: Appearance.colors.colLayer2Active
+                            colBackgroundHover: ColorUtils.mix(Appearance.colors.colSurfaceContainerHigh, Appearance.colors.colOnLayer2, 0.9)
+                            colRipple: ColorUtils.mix(Appearance.colors.colSurfaceContainerHigh, Appearance.colors.colOnLayer2, 0.8)
                             onClicked: root.picked(row.modelData)
                             contentItem: RowLayout {
                                 spacing: 12
@@ -198,12 +211,21 @@ Item {
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     spacing: 0
-                                    StyledText {
-                                        Layout.fillWidth: true
-                                        text: StringUtils.cleanMusicTitle(row.modelData.trackTitle) || Translation.tr("Untitled")
-                                        font.pixelSize: Appearance.font.pixelSize.normal
-                                        color: Appearance.colors.colOnLayer2
-                                        elide: Text.ElideRight
+                                    RowLayout {
+                                        spacing: 6
+                                        MaterialSymbol {
+                                            visible: row.modelData.isPlaying
+                                            text: "graphic_eq"
+                                            iconSize: 16
+                                            color: Appearance.colors.colPrimary
+                                        }
+                                        StyledText {
+                                            Layout.fillWidth: true
+                                            text: StringUtils.cleanMusicTitle(row.modelData.trackTitle) || Translation.tr("Untitled")
+                                            font.pixelSize: Appearance.font.pixelSize.normal
+                                            color: Appearance.colors.colOnLayer2
+                                            elide: Text.ElideRight
+                                        }
                                     }
                                     StyledText {
                                         Layout.fillWidth: true
@@ -215,8 +237,8 @@ Item {
                                 }
                                 RippleButton {
                                     Layout.rightMargin: 4
-                                    implicitWidth: 40
-                                    implicitHeight: 40
+                                    implicitWidth: 48
+                                    implicitHeight: 48
                                     buttonRadius: Appearance.rounding.full
                                     enabled: row.modelData.canTogglePlaying ?? false
                                     onClicked: row.modelData.togglePlaying()
