@@ -1,0 +1,5 @@
+# README shots, rendered by the extensions fork:
+#   tests/widget-shots.sh -x ~/Projects/ii-widget-player
+# Stub players and generated covers from the demo scene, so no real media ends up in docs/.
+-f demo/DemoPlayer.qml -n hero -g 440x496
+-f demo/DemoPlayer.qml -n pager -g 440x484 -p pager=true
