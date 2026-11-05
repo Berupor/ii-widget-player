@@ -1,11 +1,10 @@
 import qs.modules.common
-import qs.modules.widgets
 import qs.services
 import QtQuick
 import Quickshell.Services.Mpris
 import "hero.js" as Hero
 
-/** Popup body: picks the hero player and hands the views plain lists. */
+/** Popup body: picks the hero player and hands the view plain lists. */
 Item {
     id: root
     property MprisPlayer picked: null
@@ -13,7 +12,6 @@ Item {
     readonly property var players: MprisController.players
     readonly property MprisPlayer hero: Hero.pick(root.picked, MprisController.activePlayer, root.players)
     readonly property var rest: Hero.rows(root.slots, root.hero, root.players)
-    readonly property bool pager: WidgetCatalog.option("player", "pager") ?? false
 
     implicitWidth: Appearance.sizes.mediaControlsWidth
     implicitHeight: view.implicitHeight
@@ -39,25 +37,11 @@ Item {
         onTriggered: root.hero.positionChanged()
     }
 
-    Loader {
+    HeroView {
         id: view
         width: parent.width
-        sourceComponent: root.pager ? pagerView : heroView
-    }
-    Component {
-        id: heroView
-        HeroView {
-            hero: root.hero
-            rest: root.rest
-            onPicked: player => root.pick(player)
-        }
-    }
-    Component {
-        id: pagerView
-        PagerView {
-            hero: root.hero
-            players: root.players
-            onPicked: player => root.pick(player)
-        }
+        hero: root.hero
+        rest: root.rest
+        onPicked: player => root.pick(player)
     }
 }

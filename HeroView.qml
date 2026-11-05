@@ -5,36 +5,36 @@ import qs.services
 import QtQuick
 import QtQuick.Layouts
 
-/** Neutral card: the hero player up top, the rest as rows under it. */
+/** The hero player on a card tinted by its cover, the rest as rows under it. */
 Item {
     id: root
     property var hero: null
     property var rest: []
     readonly property bool playing: root.hero?.isPlaying ?? false
+    readonly property QtObject tint: coverTint.scheme
     signal picked(var player)
 
     implicitWidth: Appearance.sizes.mediaControlsWidth
     implicitHeight: surface.implicitHeight + Appearance.sizes.elevationMargin * 2
 
-    component TimeLabel: StyledText {
-        font.pixelSize: Appearance.font.pixelSize.smaller
-        font.features: { "tnum": 1 }
-        color: Appearance.colors.colSubtext
+    CoverTint {
+        id: coverTint
+        player: root.hero
     }
-    component SideButton: GroupButton {
+
+    component SkipButton: RippleButton {
         property string iconName
-        baseWidth: 56
-        baseHeight: 48
+        implicitWidth: 32
+        implicitHeight: 32
         buttonRadius: Appearance.rounding.full
-        colBackground: Appearance.colors.colSecondaryContainer
-        colBackgroundHover: Appearance.colors.colSecondaryContainerHover
-        colBackgroundActive: Appearance.colors.colSecondaryContainerActive
+        colBackgroundHover: root.tint.colSecondaryContainerHover
+        colRipple: root.tint.colSecondaryContainerActive
         contentItem: MaterialSymbol {
             text: parent.iconName
             fill: 1
-            iconSize: 24
+            iconSize: Appearance.font.pixelSize.huge
             horizontalAlignment: Text.AlignHCenter
-            color: Appearance.colors.colOnSecondaryContainer
+            color: root.tint.colOnLayer0
         }
     }
 
@@ -47,10 +47,11 @@ Item {
         y: Appearance.sizes.elevationMargin
         width: root.width - Appearance.sizes.elevationMargin * 2
         implicitHeight: root.hero ? content.implicitHeight + 32 : 200
-        radius: Appearance.rounding.large
-        color: Appearance.m3colors.m3surfaceContainer
-        border.width: 1
-        border.color: Appearance.colors.colLayer0Border
+        radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+        color: ColorUtils.applyAlpha(root.tint.colLayer0, 1)
+        Behavior on color {
+            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+        }
 
         EmptyState {
             visible: !root.hero
@@ -71,7 +72,9 @@ Item {
                     Layout.alignment: Qt.AlignTop
                     player: root.hero
                     size: 112
-                    radius: Appearance.rounding.normal
+                    radius: Appearance.rounding.verysmall
+                    colFallback: root.tint.colSecondaryContainer
+                    colOnFallback: root.tint.colOnSecondaryContainer
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -87,7 +90,7 @@ Item {
                             Layout.fillWidth: true
                             text: root.hero?.identity ?? ""
                             font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
+                            color: root.tint.colSubtext
                             elide: Text.ElideRight
                         }
                     }
@@ -106,10 +109,8 @@ Item {
                         Layout.minimumHeight: titleMetrics.height * 2
                         verticalAlignment: Text.AlignBottom
                         text: StringUtils.cleanMusicTitle(root.hero?.trackTitle) || Translation.tr("Untitled")
-                        font.family: Appearance.font.family.title
-                        font.pixelSize: Appearance.font.pixelSize.huge
-                        font.variableAxes: Appearance.font.variableAxes.title
-                        color: Appearance.colors.colOnLayer0
+                        font.pixelSize: Appearance.font.pixelSize.large
+                        color: root.tint.colOnLayer0
                         wrapMode: Text.Wrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
@@ -119,60 +120,62 @@ Item {
                         Layout.fillWidth: true
                         Layout.minimumHeight: artistMetrics.height
                         text: root.hero?.trackArtist ?? ""
-                        font.pixelSize: Appearance.font.pixelSize.normal
-                        color: Appearance.colors.colSubtext
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: root.tint.colSubtext
                         elide: Text.ElideRight
                     }
                 }
             }
 
             ColumnLayout {
-                spacing: 0
-                TrackProgress {
-                    Layout.fillWidth: true
-                    player: root.hero
-                }
+                spacing: 4
                 RowLayout {
-                    visible: (root.hero?.length ?? 0) > 0
-                    TimeLabel {
-                        text: StringUtils.friendlyTimeForSeconds(root.hero?.position ?? 0)
+                    StyledText {
+                        visible: (root.hero?.length ?? 0) > 0
+                        text: `${StringUtils.friendlyTimeForSeconds(root.hero?.position ?? 0)} / ${StringUtils.friendlyTimeForSeconds(root.hero?.length ?? 0)}`
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        font.features: { "tnum": 1 }
+                        color: root.tint.colSubtext
                     }
                     Item {
                         Layout.fillWidth: true
                     }
-                    TimeLabel {
-                        text: StringUtils.friendlyTimeForSeconds(root.hero?.length ?? 0)
+                    RippleButton {
+                        implicitWidth: 44
+                        implicitHeight: 44
+                        enabled: root.hero?.canTogglePlaying ?? false
+                        buttonRadius: root.playing ? Appearance.rounding.normal : Appearance.rounding.full
+                        colBackground: root.playing ? root.tint.colPrimary : root.tint.colSecondaryContainer
+                        colBackgroundHover: root.playing ? root.tint.colPrimaryHover : root.tint.colSecondaryContainerHover
+                        colRipple: root.playing ? root.tint.colPrimaryActive : root.tint.colSecondaryContainerActive
+                        downAction: () => root.hero.togglePlaying()
+                        contentItem: MaterialSymbol {
+                            text: root.playing ? "pause" : "play_arrow"
+                            fill: 1
+                            iconSize: Appearance.font.pixelSize.huge
+                            horizontalAlignment: Text.AlignHCenter
+                            color: root.playing ? root.tint.colOnPrimary : root.tint.colOnSecondaryContainer
+                        }
                     }
                 }
-            }
-
-            ButtonGroup {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 4
-                SideButton {
-                    iconName: "skip_previous"
-                    enabled: root.hero?.canGoPrevious ?? false
-                    downAction: () => root.hero.previous()
-                }
-                GroupButton {
-                    baseWidth: 96
-                    baseHeight: 48
-                    toggled: true
-                    enabled: root.hero?.canTogglePlaying ?? false
-                    buttonRadius: root.playing ? Appearance.rounding.normal : Appearance.rounding.full
-                    downAction: () => root.hero.togglePlaying()
-                    contentItem: MaterialSymbol {
-                        text: root.playing ? "pause" : "play_arrow"
-                        fill: 1
-                        iconSize: 28
-                        horizontalAlignment: Text.AlignHCenter
-                        color: Appearance.colors.colOnPrimary
+                RowLayout {
+                    SkipButton {
+                        iconName: "skip_previous"
+                        enabled: root.hero?.canGoPrevious ?? false
+                        downAction: () => root.hero.previous()
                     }
-                }
-                SideButton {
-                    iconName: "skip_next"
-                    enabled: root.hero?.canGoNext ?? false
-                    downAction: () => root.hero.next()
+                    TrackProgress {
+                        Layout.fillWidth: true
+                        player: root.hero
+                        highlightColor: root.tint.colPrimary
+                        handleColor: root.tint.colPrimary
+                        trackColor: root.tint.colSecondaryContainer
+                    }
+                    SkipButton {
+                        iconName: "skip_next"
+                        enabled: root.hero?.canGoNext ?? false
+                        downAction: () => root.hero.next()
+                    }
                 }
             }
 
@@ -181,7 +184,7 @@ Item {
                 visible: root.rest.length > 0
                 implicitHeight: restList.implicitHeight + 8
                 radius: Appearance.rounding.normal
-                color: Appearance.colors.colSurfaceContainerHigh
+                color: ColorUtils.transparentize(root.tint.colOnLayer0, 0.93)
 
                 ColumnLayout {
                     id: restList
@@ -197,8 +200,8 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: 56
                             buttonRadius: Appearance.rounding.small
-                            colBackgroundHover: ColorUtils.mix(Appearance.colors.colSurfaceContainerHigh, Appearance.colors.colOnLayer2, 0.9)
-                            colRipple: ColorUtils.mix(Appearance.colors.colSurfaceContainerHigh, Appearance.colors.colOnLayer2, 0.8)
+                            colBackgroundHover: ColorUtils.transparentize(root.tint.colOnLayer0, 0.88)
+                            colRipple: ColorUtils.transparentize(root.tint.colOnLayer0, 0.8)
                             onClicked: root.picked(row.modelData)
                             contentItem: RowLayout {
                                 spacing: 12
@@ -217,13 +220,13 @@ Item {
                                             visible: row.modelData.isPlaying
                                             text: "graphic_eq"
                                             iconSize: 16
-                                            color: Appearance.colors.colPrimary
+                                            color: root.tint.colPrimary
                                         }
                                         StyledText {
                                             Layout.fillWidth: true
                                             text: StringUtils.cleanMusicTitle(row.modelData.trackTitle) || Translation.tr("Untitled")
                                             font.pixelSize: Appearance.font.pixelSize.normal
-                                            color: Appearance.colors.colOnLayer2
+                                            color: root.tint.colOnLayer0
                                             elide: Text.ElideRight
                                         }
                                     }
@@ -231,7 +234,7 @@ Item {
                                         Layout.fillWidth: true
                                         text: [row.modelData.identity, row.modelData.trackArtist].filter(s => s).join(" · ")
                                         font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: Appearance.colors.colSubtext
+                                        color: root.tint.colSubtext
                                         elide: Text.ElideRight
                                     }
                                 }
@@ -245,9 +248,9 @@ Item {
                                     contentItem: MaterialSymbol {
                                         text: row.modelData.isPlaying ? "pause" : "play_arrow"
                                         fill: 1
-                                        iconSize: 22
+                                        iconSize: Appearance.font.pixelSize.huge
                                         horizontalAlignment: Text.AlignHCenter
-                                        color: Appearance.colors.colOnLayer2
+                                        color: root.tint.colOnLayer0
                                     }
                                 }
                             }

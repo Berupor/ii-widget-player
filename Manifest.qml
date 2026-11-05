@@ -13,13 +13,4 @@ WidgetManifest {
     slots: ({
         "mediaView": "MediaView.qml"
     })
-    options: [
-        {
-            "key": "pager",
-            "type": "switch",
-            "icon": "view_carousel",
-            "label": Translation.tr("One player at a time, tinted by its cover"),
-            "default": false
-        }
-    ]
 }

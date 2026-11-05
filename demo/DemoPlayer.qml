@@ -1,7 +1,7 @@
 //@ probe -g 440x560
 /**
- * Both views on made-up players, so shots look the same on every machine.
- * `pager` picks the view, `scene`: 0 four players, 1 one paused without art, 2 none.
+ * The view on made-up players, so shots look the same on every machine.
+ * `scene`: 0 four players, 1 one paused without art, 2 none.
  */
 import ".."
 import "stubs"
@@ -10,7 +10,6 @@ import QtQuick
 
 Item {
     id: root
-    property bool pager: false
     property int scene: 0
     property int picked: -1
 
@@ -33,7 +32,7 @@ Item {
             { "name": "rows skip the hero and keep the player order", "got": Hero.rows([], dunes, all), "want": [clip, tide, moss] },
             { "name": "picking a row hands its slot to the old hero", "got": Hero.swap([clip, tide, moss], tide, dunes), "want": [clip, dunes, moss] },
             { "name": "rows keep the slots order and append newcomers", "got": Hero.rows([moss, clip], tide, all), "want": [moss, clip, dunes] },
-            { "name": "the view takes room with players", "got": view.item.implicitHeight > 200, "want": root.scene !== 2 }
+            { "name": "the view takes room with players", "got": view.implicitHeight > 200, "want": root.scene !== 2 }
         ]
     }
 
@@ -88,23 +87,10 @@ Item {
         length: 1468
     }
 
-    Loader {
+    HeroView {
         id: view
         width: parent.width
-        sourceComponent: root.pager ? pagerView : heroView
-    }
-    Component {
-        id: heroView
-        HeroView {
-            hero: root.hero
-            rest: Hero.rows([], root.hero, root.players)
-        }
-    }
-    Component {
-        id: pagerView
-        PagerView {
-            hero: root.hero
-            players: root.players
-        }
+        hero: root.hero
+        rest: Hero.rows([], root.hero, root.players)
     }
 }

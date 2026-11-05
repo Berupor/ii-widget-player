@@ -5,18 +5,15 @@ fork](https://github.com/Berupor/dots-hyprland-extensions). It takes the
 `mediaView` slot, so the popup that opens from the bar's media pill shows this
 instead of one card per player.
 
-| Default | One player at a time |
-|---|---|
-| ![Hero and list](docs/hero.png) | ![Pager](docs/pager.png) |
+![Hero and list](docs/hero.png)
 
-The active player gets the big card; every other player is a row under it (or a
-chip on top, in the pager). Click a row or chip to bring that player forward: it
-also becomes the shell's tracked player, so the bar follows it once nothing else
-is playing. The button at the end of a row plays or pauses that player without
-bringing it forward.
+The active player gets the big card; every other player is a row under it. Click
+a row to bring that player forward: it also becomes the shell's tracked player, so
+the bar follows it once nothing else is playing. The button at the end of a row
+plays or pauses that player without bringing it forward.
 
-The pager is a switch in the widget's card on the Widgets page. It tints the card
-from the cover and falls back to the wallpaper colors when there is no cover.
+The card follows the shell's own player cards: it is tinted from the cover and
+falls back to the wallpaper colors when there is no cover.
 
 ## Install
 
@@ -28,8 +25,9 @@ the built-in popup uses.
 
 | File | What it is |
 |---|---|
-| `MediaView.qml` | slot entry: picks the hero player, loads the view |
+| `MediaView.qml` | slot entry: picks the hero player |
 | `hero.js` | which player goes up front |
-| `HeroView.qml`, `PagerView.qml` | the two views, fed plain lists so the demo can drive them |
+| `HeroView.qml` | the card, fed plain lists so the demo can drive it |
 | `PlayerArt.qml`, `CoverArt.qml` | cover with a fallback glyph, remote art cached to a file |
+| `CoverTint.qml` | color scheme off the cover, mixed like the shell's player cards |
 | `demo/DemoPlayer.qml` | stub players for the checks and the shots in `docs/` |
