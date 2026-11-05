@@ -53,9 +53,13 @@ Item {
             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
         }
 
-        EmptyState {
-            visible: !root.hero
-            anchors.centerIn: parent
+        PagePlaceholder {
+            shown: !root.hero
+            icon: "music_off"
+            title: Translation.tr("Nothing playing")
+            description: Translation.tr("Media from any app shows up here")
+            shape: MaterialShape.Shape.Cookie7Sided
+            descriptionHorizontalAlignment: Text.AlignHCenter
         }
 
         ColumnLayout {
@@ -219,7 +223,7 @@ Item {
                                         MaterialSymbol {
                                             visible: row.modelData.isPlaying
                                             text: "graphic_eq"
-                                            iconSize: 16
+                                            iconSize: Appearance.font.pixelSize.normal
                                             color: root.tint.colPrimary
                                         }
                                         StyledText {
