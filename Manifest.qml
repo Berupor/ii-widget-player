@@ -13,4 +13,13 @@ WidgetManifest {
     slots: ({
         "mediaView": "MediaView.qml"
     })
+    options: [
+        {
+            "key": "appIcons",
+            "type": "switch",
+            "icon": "apps",
+            "label": Translation.tr("App icons next to the artist"),
+            "default": true
+        }
+    ]
 }

@@ -5,11 +5,12 @@ import qs.services
 import QtQuick
 import QtQuick.Layouts
 
-/** The hero player on a card tinted by its cover, the rest as rows under it. */
+/** A neutral list of players; the hero is the one row opened up on its cover's colors. */
 Item {
     id: root
     property var hero: null
     property var rest: []
+    property bool appIcons: true
     readonly property bool playing: root.hero?.isPlaying ?? false
     readonly property QtObject tint: coverTint.scheme
     signal picked(var player)
@@ -24,8 +25,8 @@ Item {
 
     component SkipButton: RippleButton {
         property string iconName
-        implicitWidth: 32
-        implicitHeight: 32
+        implicitWidth: 36
+        implicitHeight: 36
         buttonRadius: Appearance.rounding.full
         colBackgroundHover: root.tint.colSecondaryContainerHover
         colRipple: root.tint.colSecondaryContainerActive
@@ -38,6 +39,27 @@ Item {
         }
     }
 
+    component Byline: RowLayout {
+        id: byline
+        property var player
+        property color color
+        Layout.fillWidth: true
+        spacing: 6
+        PlayerAppIcon {
+            visible: root.appIcons
+            player: byline.player
+            implicitSize: 12
+        }
+        StyledText {
+            Layout.fillWidth: true
+            text: root.appIcons ? (byline.player?.trackArtist || byline.player?.identity || "")
+                : [byline.player?.trackArtist, byline.player?.identity].filter(s => s).join(" · ")
+            font.pixelSize: Appearance.font.pixelSize.smaller
+            color: byline.color
+            elide: Text.ElideRight
+        }
+    }
+
     StyledRectangularShadow {
         target: surface
     }
@@ -46,12 +68,9 @@ Item {
         x: Appearance.sizes.elevationMargin
         y: Appearance.sizes.elevationMargin
         width: root.width - Appearance.sizes.elevationMargin * 2
-        implicitHeight: root.hero ? content.implicitHeight + 32 : 200
+        implicitHeight: root.hero ? content.implicitHeight + 16 : 200
         radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
-        color: ColorUtils.applyAlpha(root.tint.colLayer0, 1)
-        Behavior on color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-        }
+        color: Appearance.colors.colLayer0
 
         PagePlaceholder {
             shown: !root.hero
@@ -65,198 +84,157 @@ Item {
         ColumnLayout {
             id: content
             visible: !!root.hero
-            x: 16
-            y: 16
-            width: parent.width - 32
-            spacing: 16
+            x: 8
+            y: 8
+            width: parent.width - 16
+            spacing: 2
 
-            RowLayout {
-                spacing: 16
-                PlayerArt {
-                    Layout.alignment: Qt.AlignTop
-                    player: root.hero
-                    size: 112
-                    radius: Appearance.rounding.verysmall
-                    colFallback: root.tint.colSecondaryContainer
-                    colOnFallback: root.tint.colOnSecondaryContainer
-                }
+            Backdrop {
+                Layout.fillWidth: true
+                implicitHeight: heroContent.implicitHeight + 28
+                radius: Appearance.rounding.large
+                player: root.hero
+                tint: root.tint
+
                 ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignTop
-                    spacing: 4
+                    id: heroContent
+                    x: 14
+                    y: 14
+                    width: parent.width - 28
+                    spacing: 8
+
+                    RowLayout {
+                        spacing: 14
+                        PlayerArt {
+                            player: root.hero
+                            size: 72
+                            radius: Appearance.rounding.verysmall
+                            colFallback: root.tint.colSecondaryContainer
+                            colOnFallback: root.tint.colOnSecondaryContainer
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: StringUtils.cleanMusicTitle(root.hero?.trackTitle) || Translation.tr("Untitled")
+                                font.pixelSize: Appearance.font.pixelSize.large
+                                color: root.tint.colOnLayer0
+                                elide: Text.ElideRight
+                            }
+                            Byline {
+                                player: root.hero
+                                color: root.tint.colSubtext
+                            }
+                        }
+                        RippleButton {
+                            implicitWidth: 48
+                            implicitHeight: 48
+                            enabled: root.hero?.canTogglePlaying ?? false
+                            buttonRadius: root.playing ? Appearance.rounding.normal : Appearance.rounding.full
+                            colBackground: root.playing ? root.tint.colPrimary : root.tint.colSecondaryContainer
+                            colBackgroundHover: root.playing ? root.tint.colPrimaryHover : root.tint.colSecondaryContainerHover
+                            colRipple: root.playing ? root.tint.colPrimaryActive : root.tint.colSecondaryContainerActive
+                            downAction: () => root.hero.togglePlaying()
+                            contentItem: MaterialSymbol {
+                                text: root.playing ? "pause" : "play_arrow"
+                                fill: 1
+                                iconSize: Appearance.font.pixelSize.huge
+                                horizontalAlignment: Text.AlignHCenter
+                                color: root.playing ? root.tint.colOnPrimary : root.tint.colOnSecondaryContainer
+                            }
+                        }
+                    }
+
                     RowLayout {
                         spacing: 6
-                        PlayerAppIcon {
-                            player: root.hero
-                            implicitSize: 14
+                        SkipButton {
+                            iconName: "skip_previous"
+                            enabled: root.hero?.canGoPrevious ?? false
+                            downAction: () => root.hero.previous()
                         }
                         StyledText {
-                            Layout.fillWidth: true
-                            text: root.hero?.identity ?? ""
+                            text: StringUtils.friendlyTimeForSeconds(root.hero?.position ?? 0)
                             font.pixelSize: Appearance.font.pixelSize.smaller
+                            font.features: { "tnum": 1 }
                             color: root.tint.colSubtext
-                            elide: Text.ElideRight
                         }
-                    }
-                    FontMetrics {
-                        id: titleMetrics
-                        font: title.font
-                    }
-                    FontMetrics {
-                        id: artistMetrics
-                        font: artist.font
-                    }
-                    StyledText {
-                        id: title
-                        Layout.fillWidth: true
-                        Layout.topMargin: 4
-                        Layout.minimumHeight: titleMetrics.height * 2
-                        verticalAlignment: Text.AlignBottom
-                        text: StringUtils.cleanMusicTitle(root.hero?.trackTitle) || Translation.tr("Untitled")
-                        font.pixelSize: Appearance.font.pixelSize.large
-                        color: root.tint.colOnLayer0
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                    }
-                    StyledText {
-                        id: artist
-                        Layout.fillWidth: true
-                        Layout.minimumHeight: artistMetrics.height
-                        text: root.hero?.trackArtist ?? ""
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        color: root.tint.colSubtext
-                        elide: Text.ElideRight
-                    }
-                }
-            }
-
-            ColumnLayout {
-                spacing: 4
-                RowLayout {
-                    StyledText {
-                        visible: (root.hero?.length ?? 0) > 0
-                        text: `${StringUtils.friendlyTimeForSeconds(root.hero?.position ?? 0)} / ${StringUtils.friendlyTimeForSeconds(root.hero?.length ?? 0)}`
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        font.features: { "tnum": 1 }
-                        color: root.tint.colSubtext
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                    RippleButton {
-                        implicitWidth: 44
-                        implicitHeight: 44
-                        enabled: root.hero?.canTogglePlaying ?? false
-                        buttonRadius: root.playing ? Appearance.rounding.normal : Appearance.rounding.full
-                        colBackground: root.playing ? root.tint.colPrimary : root.tint.colSecondaryContainer
-                        colBackgroundHover: root.playing ? root.tint.colPrimaryHover : root.tint.colSecondaryContainerHover
-                        colRipple: root.playing ? root.tint.colPrimaryActive : root.tint.colSecondaryContainerActive
-                        downAction: () => root.hero.togglePlaying()
-                        contentItem: MaterialSymbol {
-                            text: root.playing ? "pause" : "play_arrow"
-                            fill: 1
-                            iconSize: Appearance.font.pixelSize.huge
-                            horizontalAlignment: Text.AlignHCenter
-                            color: root.playing ? root.tint.colOnPrimary : root.tint.colOnSecondaryContainer
-                        }
-                    }
-                }
-                RowLayout {
-                    SkipButton {
-                        iconName: "skip_previous"
-                        enabled: root.hero?.canGoPrevious ?? false
-                        downAction: () => root.hero.previous()
-                    }
-                    TrackProgress {
-                        Layout.fillWidth: true
-                        player: root.hero
-                        highlightColor: root.tint.colPrimary
-                        handleColor: root.tint.colPrimary
-                        trackColor: root.tint.colSecondaryContainer
-                    }
-                    SkipButton {
-                        iconName: "skip_next"
-                        enabled: root.hero?.canGoNext ?? false
-                        downAction: () => root.hero.next()
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                visible: root.rest.length > 0
-                implicitHeight: restList.implicitHeight + 8
-                radius: Appearance.rounding.normal
-                color: ColorUtils.transparentize(root.tint.colOnLayer0, 0.93)
-
-                ColumnLayout {
-                    id: restList
-                    x: 4
-                    y: 4
-                    width: parent.width - 8
-                    spacing: 0
-                    Repeater {
-                        model: root.rest
-                        delegate: RippleButton {
-                            id: row
-                            required property var modelData
+                        TrackProgress {
                             Layout.fillWidth: true
-                            implicitHeight: 56
-                            buttonRadius: Appearance.rounding.small
-                            colBackgroundHover: ColorUtils.transparentize(root.tint.colOnLayer0, 0.88)
-                            colRipple: ColorUtils.transparentize(root.tint.colOnLayer0, 0.8)
-                            onClicked: root.picked(row.modelData)
-                            contentItem: RowLayout {
-                                spacing: 12
-                                PlayerArt {
-                                    Layout.leftMargin: 4
-                                    player: row.modelData
-                                    size: 40
-                                    radius: Appearance.rounding.verysmall
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 0
-                                    RowLayout {
-                                        spacing: 6
-                                        MaterialSymbol {
-                                            visible: row.modelData.isPlaying
-                                            text: "graphic_eq"
-                                            iconSize: Appearance.font.pixelSize.normal
-                                            color: root.tint.colPrimary
-                                        }
-                                        StyledText {
-                                            Layout.fillWidth: true
-                                            text: StringUtils.cleanMusicTitle(row.modelData.trackTitle) || Translation.tr("Untitled")
-                                            font.pixelSize: Appearance.font.pixelSize.normal
-                                            color: root.tint.colOnLayer0
-                                            elide: Text.ElideRight
-                                        }
-                                    }
-                                    StyledText {
-                                        Layout.fillWidth: true
-                                        text: [row.modelData.identity, row.modelData.trackArtist].filter(s => s).join(" · ")
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: root.tint.colSubtext
-                                        elide: Text.ElideRight
-                                    }
-                                }
-                                RippleButton {
-                                    Layout.rightMargin: 4
-                                    implicitWidth: 48
-                                    implicitHeight: 48
-                                    buttonRadius: Appearance.rounding.full
-                                    enabled: row.modelData.canTogglePlaying ?? false
-                                    onClicked: row.modelData.togglePlaying()
-                                    contentItem: MaterialSymbol {
-                                        text: row.modelData.isPlaying ? "pause" : "play_arrow"
-                                        fill: 1
-                                        iconSize: Appearance.font.pixelSize.huge
-                                        horizontalAlignment: Text.AlignHCenter
-                                        color: root.tint.colOnLayer0
-                                    }
-                                }
+                            player: root.hero
+                            highlightColor: root.tint.colPrimary
+                            handleColor: root.tint.colPrimary
+                            trackColor: root.tint.colSecondaryContainer
+                        }
+                        StyledText {
+                            text: StringUtils.friendlyTimeForSeconds(root.hero?.length ?? 0)
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            font.features: { "tnum": 1 }
+                            color: root.tint.colSubtext
+                        }
+                        SkipButton {
+                            iconName: "skip_next"
+                            enabled: root.hero?.canGoNext ?? false
+                            downAction: () => root.hero.next()
+                        }
+                    }
+                }
+            }
+
+            Repeater {
+                model: root.rest
+                delegate: RippleButton {
+                    id: row
+                    required property var modelData
+                    Layout.fillWidth: true
+                    implicitHeight: 60
+                    buttonRadius: Appearance.rounding.normal
+                    colBackgroundHover: Appearance.colors.colLayer0Hover
+                    colRipple: Appearance.colors.colLayer0Active
+                    onClicked: root.picked(row.modelData)
+                    contentItem: RowLayout {
+                        spacing: 14
+                        PlayerArt {
+                            Layout.leftMargin: 6
+                            player: row.modelData
+                            size: 40
+                            radius: Appearance.rounding.verysmall
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: StringUtils.cleanMusicTitle(row.modelData.trackTitle) || Translation.tr("Untitled")
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                color: Appearance.colors.colOnLayer0
+                                elide: Text.ElideRight
+                            }
+                            Byline {
+                                player: row.modelData
+                                color: Appearance.colors.colSubtext
+                            }
+                        }
+                        MaterialSymbol {
+                            visible: row.modelData.isPlaying
+                            text: "graphic_eq"
+                            iconSize: Appearance.font.pixelSize.larger
+                            color: Appearance.colors.colPrimary
+                        }
+                        RippleButton {
+                            Layout.rightMargin: 10
+                            implicitWidth: 40
+                            implicitHeight: 40
+                            buttonRadius: Appearance.rounding.full
+                            enabled: row.modelData.canTogglePlaying ?? false
+                            colBackgroundHover: Appearance.colors.colLayer1Hover
+                            onClicked: row.modelData.togglePlaying()
+                            contentItem: MaterialSymbol {
+                                text: row.modelData.isPlaying ? "pause" : "play_arrow"
+                                fill: 1
+                                iconSize: Appearance.font.pixelSize.huge
+                                horizontalAlignment: Text.AlignHCenter
+                                color: Appearance.colors.colOnLayer0
                             }
                         }
                     }

@@ -1,4 +1,5 @@
 import qs.modules.common
+import qs.modules.widgets
 import qs.services
 import QtQuick
 import Quickshell.Services.Mpris
@@ -42,6 +43,7 @@ Item {
         width: parent.width
         hero: root.hero
         rest: root.rest
+        appIcons: WidgetCatalog.option("player", "appIcons") ?? true
         onPicked: player => root.pick(player)
     }
 }
