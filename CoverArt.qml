@@ -1,6 +1,7 @@
 import qs.modules.common
 import QtQuick
 import Quickshell.Io
+import "hero.js" as Hero
 
 /** Local file for a player's cover: remote art goes through the shell's cover cache. */
 Item {
@@ -13,14 +14,20 @@ Item {
         : root.fetchedUrl === root.url ? `file://${Directories.coverArt}/${Qt.md5(root.url)}` : ""
 
     function fetch() {
-        if (!root.remote || (fetcher.running && fetcher.url === root.url))
+        if (!root.remote)
+            return
+        if (Hero.isFetched(root.url)) {
+            root.fetchedUrl = root.url
+            return
+        }
+        if (fetcher.running && fetcher.url === root.url)
             return
         fetcher.running = false
         fetcher.url = root.url
         fetcher.running = true
     }
     onUrlChanged: Qt.callLater(root.fetch)
-    Component.onCompleted: Qt.callLater(root.fetch)
+    Component.onCompleted: root.fetch()
 
     Process {
         id: fetcher
@@ -28,8 +35,10 @@ Item {
         readonly property string path: `${Directories.coverArt}/${Qt.md5(fetcher.url)}`
         command: ["bash", "-c", '[ -f "$1" ] || { mkdir -p "${1%/*}" && curl -4 -sSL "$2" -o "$1.$$" && mv "$1.$$" "$1" || { rm -f "$1.$$"; exit 1; }; }', "_", fetcher.path, fetcher.url]
         onExited: exitCode => {
-            if (exitCode === 0)
-                root.fetchedUrl = fetcher.url
+            if (exitCode !== 0)
+                return
+            Hero.rememberFetched(fetcher.url)
+            root.fetchedUrl = fetcher.url
         }
     }
 }

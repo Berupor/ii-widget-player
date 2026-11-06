@@ -31,3 +31,14 @@ function hasTint(url) {
 function rememberTint(url, color) {
     tints[url] = color
 }
+
+const fetched = {}
+
+/** Covers already in the shell's cache: a reopened popup shows them at once instead of after a curl round trip. */
+function isFetched(url) {
+    return url in fetched
+}
+
+function rememberFetched(url) {
+    fetched[url] = true
+}
